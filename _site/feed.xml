@@ -1,0 +1,322 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.10.0">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2026-02-13T16:48:56+00:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">Your Name / Site Title</title><subtitle>Your Name&apos;s academic portfolio</subtitle><author><name>Your Sidebar Name</name><email>none@example.org</email></author><entry><title type="html">PDE-Refiner: Achieving Accurate Long Rollouts with Neural PDE Solvers (NeurIPS 2023)</title><link href="http://localhost:4000/posts/pde-refiner/" rel="alternate" type="text/html" title="PDE-Refiner: Achieving Accurate Long Rollouts with Neural PDE Solvers (NeurIPS 2023)" /><published>2026-02-13T00:00:00+00:00</published><updated>2026-02-13T00:00:00+00:00</updated><id>http://localhost:4000/posts/pde-refiner-blog</id><content type="html" xml:base="http://localhost:4000/posts/pde-refiner/"><![CDATA[<h2 id="introduction">Introduction</h2>
+
+<p>Partial Differential Equations (PDEs) are fundamental mathematical tools used to describe physical systems such as fluid dynamics, weather forecasting, heat transfer, and engineering simulations.</p>
+
+<p>Traditionally, PDEs are solved using numerical methods like finite difference, finite element, or spectral methods. While accurate, these approaches are computationally expensive, especially for large-scale simulations or long time horizons.</p>
+
+<p>Recently, neural networks have been proposed as surrogate models for PDE solving. These neural PDE solvers can be significantly faster once trained. However, they suffer from a major limitation:</p>
+
+<p><strong>They become inaccurate when predicting over long time horizons.</strong></p>
+
+<p>This paper introduces <strong>PDE-Refiner</strong>, a method that improves long-term accuracy and stability using an iterative refinement process inspired by diffusion models.</p>
+
+<hr />
+
+<h2 id="background-neural-pde-solvers">Background: Neural PDE Solvers</h2>
+
+<p>Consider a time-dependent PDE:</p>
+
+\[\frac{\partial u}{\partial t} = F(t, x, u, u_x, u_{xx}, \dots)\]
+
+<p>where:</p>
+
+<ul>
+  <li>u(t,x) is the state</li>
+  <li>t is time</li>
+  <li>x is spatial position</li>
+</ul>
+
+<p>Neural PDE solvers learn an operator:</p>
+
+\[\hat{u}(t + \Delta t) = NO(u(t))\]
+
+<p>This operator predicts the next state from the current state.</p>
+
+<p>To predict multiple steps, the model is applied repeatedly:</p>
+
+\[\hat{u}(t + 2\Delta t) = NO(\hat{u}(t + \Delta t))\]
+
+\[\hat{u}(t + 3\Delta t) = NO(\hat{u}(t + 2\Delta t))\]
+
+<p>This process is called a <strong>rollout</strong>.</p>
+
+<hr />
+
+<h2 id="problem-why-neural-pde-solvers-fail">Problem: Why Neural PDE Solvers Fail</h2>
+
+<p>Neural PDE solvers are typically trained using Mean Squared Error (MSE):</p>
+
+\[L_{MSE} = \| u(t) - NO(u(t-\Delta t)) \|^2\]
+
+<p>This optimizes one-step prediction accuracy.</p>
+
+<p>However, errors accumulate during rollout.</p>
+
+<p>Even small prediction errors compound over time, causing instability.</p>
+
+<p>The paper identifies a key root cause:</p>
+
+<blockquote>
+  <p>Neural networks neglect low-amplitude spatial frequency components.</p>
+</blockquote>
+
+<p>Even though these components are small, they strongly influence long-term system behavior.</p>
+
+<p>This leads to unstable rollouts.</p>
+
+<hr />
+
+<h2 id="frequency-perspective-of-pde-solutions">Frequency Perspective of PDE Solutions</h2>
+
+<p>A PDE solution can be represented as a sum of frequencies:</p>
+
+\[u(x) = \sum_k a_k \sin(kx)\]
+
+<p>High-amplitude frequencies dominate short-term behavior.</p>
+
+<p>Low-amplitude frequencies influence long-term dynamics.</p>
+
+<p>Standard training focuses on dominant frequencies and ignores weak ones.</p>
+
+<p>This causes rollout failure.</p>
+
+<hr />
+
+<h2 id="key-idea-iterative-refinement">Key Idea: Iterative Refinement</h2>
+
+<p>PDE-Refiner improves predictions using multiple refinement steps.</p>
+
+<p>Instead of predicting once, the model refines its prediction iteratively.</p>
+
+<p>Initial prediction:</p>
+
+\[\hat{u}_0(t) = NO(u(t-\Delta t))\]
+
+<p>Then refinement improves this prediction.</p>
+
+<hr />
+
+<h2 id="refinement-step-using-gaussian-noise">Refinement Step Using Gaussian Noise</h2>
+
+<p>At step k, Gaussian noise is added:</p>
+
+\[\tilde{u}_k(t) = \hat{u}_k(t) + \sigma_k \epsilon_k\]
+
+<p>where</p>
+
+\[\epsilon_k \sim \mathcal{N}(0,1)\]
+
+<p>The model predicts the noise:</p>
+
+\[\hat{\epsilon}_k = NO(\tilde{u}_k(t), u(t-\Delta t), k)\]
+
+<p>Then the prediction is refined:</p>
+
+\[\hat{u}_{k+1}(t) =
+\tilde{u}_k(t) - \sigma_k \hat{\epsilon}_k\]
+
+<p>This removes noise and improves accuracy.</p>
+
+<hr />
+
+<h2 id="why-noise-helps">Why Noise Helps</h2>
+
+<p>Gaussian noise affects all frequencies equally.</p>
+
+<p>This forces the model to learn:</p>
+
+<ul>
+  <li>high-amplitude frequencies</li>
+  <li>low-amplitude frequencies</li>
+</ul>
+
+<p>Low-amplitude frequencies are critical for long-term stability.</p>
+
+<p>Without noise, the model ignores them.</p>
+
+<hr />
+
+<h2 id="training-objective">Training Objective</h2>
+
+<p>The model is trained to predict noise:</p>
+
+\[L =
+\mathbb{E}
+\left[
+\|
+\epsilon_k -
+NO(u(t) + \sigma_k \epsilon_k, u(t-\Delta t), k)
+\|^2
+\right]\]
+
+<p>This ensures learning across all frequency scales.</p>
+
+<hr />
+
+<h2 id="connection-to-diffusion-models">Connection to Diffusion Models</h2>
+
+<p>Diffusion models work by adding and removing noise iteratively.</p>
+
+<p>PDE-Refiner uses a similar idea, but for refinement instead of generation.</p>
+
+<p>Key difference:</p>
+
+<p>Diffusion models generate data.</p>
+
+<p>PDE-Refiner improves prediction accuracy.</p>
+
+<hr />
+
+<h2 id="algorithm-summary">Algorithm Summary</h2>
+
+<p>Prediction process:</p>
+
+<ol>
+  <li>Predict initial state</li>
+  <li>Add noise</li>
+  <li>Predict noise</li>
+  <li>Remove noise</li>
+  <li>Repeat refinement</li>
+</ol>
+
+<p>Final refined prediction:</p>
+
+\[\hat{u}_K(t)\]
+
+<hr />
+
+<h2 id="experimental-setup">Experimental Setup</h2>
+
+<p>The paper evaluates PDE-Refiner on:</p>
+
+<h3 id="1d-kuramoto-sivashinsky-equation">1D Kuramoto-Sivashinsky Equation</h3>
+
+<p>A chaotic PDE:</p>
+
+\[u_t + u u_x + u_{xx} + \nu u_{xxxx} = 0\]
+
+<p>This equation has complex dynamics.</p>
+
+<p>Ideal benchmark for stability testing.</p>
+
+<hr />
+
+<h2 id="results-improved-rollout-stability">Results: Improved Rollout Stability</h2>
+
+<p>Standard neural solver:</p>
+
+<p>Accurate rollout ~75 seconds</p>
+
+<p>PDE-Refiner:</p>
+
+<p>Accurate rollout ~100 seconds</p>
+
+<p>Improvement: ~33%</p>
+
+<hr />
+
+<h2 id="kolmogorov-flow-experiment">Kolmogorov Flow Experiment</h2>
+
+<p>A 2D fluid dynamics problem based on Navier-Stokes equation:</p>
+
+\[\partial_t u + \nabla \cdot (u \otimes u)
+=
+\nu \nabla^2 u
+-
+\nabla p
++
+f\]
+
+<p>PDE-Refiner outperformed:</p>
+
+<ul>
+  <li>classical solvers</li>
+  <li>hybrid ML solvers</li>
+  <li>standard neural solvers</li>
+</ul>
+
+<hr />
+
+<h2 id="frequency-analysis-results">Frequency Analysis Results</h2>
+
+<p>The paper shows:</p>
+
+<ul>
+  <li>
+    <p>Standard neural solvers ignore low frequencies.</p>
+  </li>
+  <li>
+    <p>PDE-Refiner learns all frequencies.</p>
+  </li>
+</ul>
+
+<p>This leads to stable rollouts.</p>
+
+<hr />
+
+<h2 id="uncertainty-estimation">Uncertainty Estimation</h2>
+
+<p>By sampling different noise realizations:</p>
+
+\[\epsilon_k^{(1)}, \epsilon_k^{(2)}, \dots\]
+
+<p>PDE-Refiner estimates uncertainty.</p>
+
+<p>This predicts when the model becomes unreliable.</p>
+
+<hr />
+
+<h2 id="advantages-of-pde-refiner">Advantages of PDE-Refiner</h2>
+
+<ul>
+  <li>Improved stability</li>
+  <li>Better frequency modeling</li>
+  <li>Longer rollout accuracy</li>
+  <li>Uncertainty estimation</li>
+  <li>Better data efficiency</li>
+</ul>
+
+<hr />
+
+<h2 id="limitations">Limitations</h2>
+
+<ul>
+  <li>
+    <p>Higher computational cost due to refinement steps.</p>
+  </li>
+  <li>
+    <p>More refinement steps improve accuracy but increase runtime.</p>
+  </li>
+</ul>
+
+<hr />
+
+<h2 id="applications">Applications</h2>
+
+<ul>
+  <li>Fluid simulation</li>
+  <li>Weather forecasting</li>
+  <li>Climate modeling</li>
+  <li>Engineering simulation</li>
+  <li>Scientific computing</li>
+</ul>
+
+<hr />
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>PDE-Refiner introduces a new paradigm for neural PDE solving.
+Instead of predicting once, it refines predictions iteratively using denoising.
+This ensures accurate modeling of all frequency components.</p>
+
+<h2 id="result">Result</h2>
+
+<p>Stable, accurate long-term PDE prediction.</p>
+
+<hr />
+
+<h2 id="reference">Reference</h2>
+
+<p>Lippe et al.,<br />
+“PDE-Refiner: Achieving Accurate Long Rollouts with Neural PDE Solvers”,<br />
+NeurIPS 2023</p>]]></content><author><name>Your Sidebar Name</name><email>none@example.org</email></author><category term="Machine Learning" /><category term="Neural PDE Solvers" /><category term="Scientific Computing" /><category term="Diffusion Models" /><category term="NeurIPS" /><summary type="html"><![CDATA[Introduction]]></summary></entry></feed>
