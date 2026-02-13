@@ -1,346 +1,281 @@
 ---
-title: "PDE-Refiner: Achieving Accurate Long Rollouts with Neural PDE Solvers (NeurIPS 2023)"
+title: "PDE-Refiner: Achieving Accurate Long Rollouts with Neural PDE Solvers"
 date: 2026-02-13
 permalink: /posts/pde-refiner/
 layout: single
 author_profile: true
 toc: true
 toc_sticky: true
+toc_label: "On this page"
+classes: wide
 tags:
-  - Machine Learning
-  - Neural PDE Solvers
-  - Scientific Computing
+  - Neural Operators
+  - PDE Surrogates
   - Diffusion Models
-  - NeurIPS
+  - Scientific Machine Learning
 ---
 
-## Introduction
+## Overview
 
-Partial Differential Equations (PDEs) are fundamental mathematical tools used to describe physical systems such as fluid dynamics, weather forecasting, heat transfer, and engineering simulations.
+Neural surrogate models for time-dependent partial differential equations (PDEs) promise substantial speedups over classical solvers, especially when high-resolution simulations must be repeated many times (e.g., optimization, design loops, uncertainty quantification). The practical value of such surrogates, however, depends on a property that is still difficult to guarantee: **stable and accurate long-horizon rollouts**.
 
-Traditionally, PDEs are solved using numerical methods like finite difference, finite element, or spectral methods. While accurate, these approaches are computationally expensive, especially for large-scale simulations or long time horizons.
+This post explains the main findings and contributions of *PDE-Refiner: Achieving Accurate Long Rollouts with Neural PDE Solvers* (NeurIPS 2023) :contentReference[oaicite:1]{index=1}. The paper contributes:
 
-Recently, neural networks have been proposed as surrogate models for PDE solving. These neural PDE solvers can be significantly faster once trained. However, they suffer from a major limitation:
-
-**They become inaccurate when predicting over long time horizons.**
-
-This paper introduces **PDE-Refiner**, a method that improves long-term accuracy and stability using an iterative refinement process inspired by diffusion models.
-
----
-
-## Background: Neural PDE Solvers
-
-Consider a time-dependent PDE:
-
-$$
-\frac{\partial u}{\partial t} = F(t, x, u, u_x, u_{xx}, \dots)
-$$
-
-where:
-
-- u(t,x) is the state
-- t is time
-- x is spatial position
-
-Neural PDE solvers learn an operator:
-
-$$
-\hat{u}(t + \Delta t) = NO(u(t))
-$$
-
-This operator predicts the next state from the current state.
-
-To predict multiple steps, the model is applied repeatedly:
-
-$$
-\hat{u}(t + 2\Delta t) = NO(\hat{u}(t + \Delta t))
-$$
-
-$$
-\hat{u}(t + 3\Delta t) = NO(\hat{u}(t + 2\Delta t))
-$$
-
-This process is called a **rollout**.
+- A diagnostic analysis of why long rollouts fail for common neural PDE solvers and rollout strategies.
+- A method, **PDE-Refiner**, that improves long-horizon accuracy via an iterative denoising refinement process inspired by diffusion models.
+- Empirical results on challenging PDE benchmarks, including chaotic 1D dynamics and 2D turbulent flow, plus a practical uncertainty estimate.
 
 ---
 
-## Problem: Why Neural PDE Solvers Fail
+## 1. Problem setting: time-dependent PDEs and neural rollouts
 
-Neural PDE solvers are typically trained using Mean Squared Error (MSE):
+We consider PDEs of the form:
 
 $$
-L_{MSE} = \| u(t) - NO(u(t-\Delta t)) \|^2
+u_t = F(t, x, u, u_x, u_{xx}, \ldots),
 $$
 
-This optimizes one-step prediction accuracy.
+with solution field $$u(t, x)$$ over time $$t \in [0, T]$$ and spatial coordinates $$x \in \mathcal{X}$$.
 
-However, errors accumulate during rollout.
+Many neural PDE solvers are trained to learn an evolution operator mapping the current state to a future state:
 
-Even small prediction errors compound over time, causing instability.
+$$
+u(t+\Delta t) = \mathcal{G}_t(\Delta t, u(t)).
+$$
 
-The paper identifies a key root cause:
+In practice, learned surrogates often perform best with **autoregressive** rollout: the model predicts one (or a few) steps, then consumes its own prediction as input for the next step:
 
-> Neural networks neglect low-amplitude spatial frequency components.
+$$
+\hat{u}(t+\Delta t) = NO(u(t)), \quad
+\hat{u}(t+2\Delta t) = NO(\hat{u}(t+\Delta t)), \; \ldots
+$$
 
-Even though these components are small, they strongly influence long-term system behavior.
-
-This leads to unstable rollouts.
+The central challenge is that **small one-step errors accumulate** until the predicted trajectory diverges from the ground truth.
 
 ---
 
-## Frequency Perspective of PDE Solutions
+## 2. Key diagnosis: spectral neglect drives long-horizon failure
 
-A PDE solution can be represented as a sum of frequencies:
+A central empirical observation in the paper is that common neural PDE solvers tend to model **dominant spatial frequency components** well (those with large amplitude), while **neglecting low-amplitude components** in the spatial spectrum. :contentReference[oaicite:2]{index=2}
 
-$$
-u(x) = \sum_k a_k \sin(kx)
-$$
+This is not merely a cosmetic error: in nonlinear PDEs, frequency components interact. Even if neglected frequencies are initially small, they can influence (or contaminate) dominant modes over time, causing a delayed but decisive degradation in rollout quality.
 
-High-amplitude frequencies dominate short-term behavior.
+### Visual intuition (recommended figure)
+Export **Figure 1** from the paper and add it here:
 
-Low-amplitude frequencies influence long-term dynamics.
+![Rollout instability and frequency-spectrum mismatch (paper Fig. 1)](/images/posts/pde-refiner/fig1.png)
 
-Standard training focuses on dominant frequencies and ignores weak ones.
-
-This causes rollout failure.
+*(Tip: name the exported image `fig1.png`.)*
 
 ---
 
-## Key Idea: Iterative Refinement
+## 3. Working example: Kuramoto–Sivashinsky (KS) dynamics
 
-PDE-Refiner improves predictions using multiple refinement steps.
-
-Instead of predicting once, the model refines its prediction iteratively.
-
-Initial prediction:
+To make the diagnosis precise, the paper studies the **Kuramoto–Sivashinsky (KS) equation**, a canonical chaotic PDE:
 
 $$
-\hat{u}_0(t) = NO(u(t-\Delta t))
+u_t + u u_x + u_{xx} + \nu u_{xxxx} = 0.
 $$
 
-Then refinement improves this prediction.
+The KS equation is a strong test because it exhibits rich chaotic behavior and nonlinear spectral interactions. In such regimes, small spectral mismodeling can remain hidden at short horizons yet destabilize rollouts later. :contentReference[oaicite:3]{index=3}
+
+A standard training objective is one-step mean squared error (MSE):
+
+$$
+\mathcal{L}_{\mathrm{MSE}} = \|u(t) - NO(u(t-\Delta t))\|^2.
+$$
+
+The paper shows that an MSE-trained model can produce reasonable short-term predictions, while still failing to model the full spectrum accurately—especially low-amplitude frequencies—leading to significantly shorter stable rollouts. :contentReference[oaicite:4]{index=4}
 
 ---
 
-## Refinement Step Using Gaussian Noise
+## 4. Why “just fix the rollout strategy” is not enough
 
-At step k, Gaussian noise is added:
+Prior work proposed multiple rollout strategies and training tricks to mitigate compounding error, including:
 
-$$
-\tilde{u}_k(t) = \hat{u}_k(t) + \sigma_k \epsilon_k
-$$
+- varying history length,
+- pushforward training,
+- invariance correction,
+- Markov Neural Operator ideas,
+- Sobolev losses emphasizing derivatives / frequency weighting.
 
-where
-
-$$
-\epsilon_k \sim \mathcal{N}(0,1)
-$$
-
-The model predicts the noise:
-
-$$
-\hat{\epsilon}_k = NO(\tilde{u}_k(t), u(t-\Delta t), k)
-$$
-
-Then the prediction is refined:
-
-$$
-\hat{u}_{k+1}(t) =
-\tilde{u}_k(t) - \sigma_k \hat{\epsilon}_k
-$$
-
-This removes noise and improves accuracy.
+The paper tests many such strategies and finds a consistent pattern: **they do not fundamentally solve the spectral neglect problem**. In other words, if the model systematically underfits low-amplitude spectral content, rollout tricks alone cannot reliably recover long-term stability. :contentReference[oaicite:5]{index=5}
 
 ---
 
-## Why Noise Helps
+## 5. PDE-Refiner: iterative denoising refinement
 
-Gaussian noise affects all frequencies equally.
+### 5.1 High-level idea
 
-This forces the model to learn:
+Instead of producing a single one-step prediction, PDE-Refiner performs **multiple refinement steps**. The model is allowed to “look again” at its own intermediate prediction and improve it iteratively.
 
-- high-amplitude frequencies
-- low-amplitude frequencies
+A key design choice is: the refinement is framed as a **denoising problem**. Denoising forces attention across the spectrum because Gaussian noise injects energy uniformly across frequencies.
 
-Low-amplitude frequencies are critical for long-term stability.
+### Add the method diagram
+Export **Figure 2** from the paper:
 
-Without noise, the model ignores them.
+![PDE-Refiner refinement process (paper Fig. 2)](/images/posts/pde-refiner/fig2.png)
 
 ---
 
-## Training Objective
+### 5.2 Refinement equations (MathJax-correct)
 
-The model is trained to predict noise:
+At refinement step $$k \ge 1$$, the current prediction $$\hat{u}_k(t)$$ is corrupted with Gaussian noise:
 
 $$
-L =
-\mathbb{E}
+\tilde{u}_k(t) = \hat{u}_k(t) + \sigma_k \epsilon_k,
+\qquad \epsilon_k \sim \mathcal{N}(0, 1).
+$$
+
+The neural operator is trained to predict the noise component $$\epsilon_k$$. Let $$\hat{\epsilon}_k$$ be the predicted noise. The denoised / refined estimate is:
+
+$$
+\hat{u}_{k+1}(t) = \tilde{u}_k(t) - \sigma_k \hat{\epsilon}_k.
+$$
+
+Crucially, the noise scale $$\sigma_k$$ is decreased across steps, so early steps focus on high-amplitude structure while later steps increasingly recover fine, low-amplitude details that are typically neglected by standard training. :contentReference[oaicite:6]{index=6}
+
+---
+
+## 6. Training objective and why it avoids common overfitting failure modes
+
+A tempting alternative is “learn an error-correction network” that takes predictions and outputs residual corrections. The paper finds that such direct error prediction tends to overfit and still prioritizes dominant errors—often aligned with dominant frequencies—rather than recovering low-amplitude spectral structure. :contentReference[oaicite:7]{index=7}
+
+PDE-Refiner instead trains via a denoising objective. At each training instance, the refinement index $$k$$ is sampled, noise is injected into the ground-truth signal, and the model is trained to predict the injected noise:
+
+$$
+\mathcal{L}_k(u, t) =
+\mathbb{E}_{\epsilon_k \sim \mathcal{N}(0,1)}
 \left[
-\|
+\left\|
 \epsilon_k -
-NO(u(t) + \sigma_k \epsilon_k, u(t-\Delta t), k)
-\|^2
-\right]
+NO(u(t) + \sigma_k \epsilon_k, \; u(t-\Delta t), \; k)
+\right\|^2
+\right].
 $$
 
-This ensures learning across all frequency scales.
+Sampling across refinement steps encourages the model to perform well across amplitude regimes and implicitly induces a spectral form of data augmentation (noise-based input distortion at varying scales). :contentReference[oaicite:8]{index=8}
 
 ---
 
-## Connection to Diffusion Models
+## 7. Relationship to diffusion models
 
-Diffusion models work by adding and removing noise iteratively.
+The refinement mechanism resembles denoising diffusion probabilistic models (DDPMs) in that it uses repeated denoising steps. However, the goals differ:
 
-PDE-Refiner uses a similar idea, but for refinement instead of generation.
+- Diffusion models typically target diverse, potentially multimodal distributions (e.g., images).
+- PDE-Refiner targets deterministic PDE evolution and requires **high-precision** recovery.
+- PDE-Refiner uses far fewer steps and a schedule tuned for accurate rollout rather than perceptual realism. :contentReference[oaicite:9]{index=9}
 
-Key difference:
-
-Diffusion models generate data.
-
-PDE-Refiner improves prediction accuracy.
+This connection is still useful because it enables uncertainty estimation by sampling different noise realizations during refinement (see Section 10).
 
 ---
 
-## Algorithm Summary
+## 8. Experiments I: Kuramoto–Sivashinsky rollouts
 
-Prediction process:
+### Setup (high level)
 
-1. Predict initial state
-2. Add noise
-3. Predict noise
-4. Remove noise
-5. Repeat refinement
+The paper evaluates PDE-Refiner and multiple baselines on KS dynamics using modern neural operator backbones (notably U-Nets). Performance is measured via **high-correlation time**: the horizon until the average Pearson correlation between prediction and ground truth drops below a threshold. :contentReference[oaicite:10]{index=10}
 
-Final refined prediction:
+### Main result
 
-$$
-\hat{u}_K(t)
-$$
+PDE-Refiner substantially extends stable rollout time compared to an MSE-trained baseline and compared to a wide range of rollout tricks and alternative losses. :contentReference[oaicite:11]{index=11}
+
+Add **Figure 3** here:
+
+![Rollout time comparison on KS (paper Fig. 3)](/images/posts/pde-refiner/fig3.png)
 
 ---
 
-## Experimental Setup
+## 9. Frequency-domain explanation of gains
 
-The paper evaluates PDE-Refiner on:
+A core empirical analysis in the paper compares prediction error spectra over refinement steps:
 
-### 1D Kuramoto-Sivashinsky Equation
+- initial prediction resembles standard MSE behavior,
+- refinement steps progressively recover low-amplitude spectral components,
+- the final prediction matches a broader band of the spectrum, leading to improved long-horizon stability.
 
-A chaotic PDE:
+Add **Figure 4** here:
 
-$$
-u_t + u u_x + u_{xx} + \nu u_{xxxx} = 0
-$$
+![Frequency-domain analysis (paper Fig. 4)](/images/posts/pde-refiner/fig4.png)
 
-This equation has complex dynamics.
-
-Ideal benchmark for stability testing.
+This figure is the clearest evidence that the method is not merely reducing average MSE, but specifically reducing errors in spectral regions that matter for long-horizon dynamics. :contentReference[oaicite:12]{index=12}
 
 ---
 
-## Results: Improved Rollout Stability
+## 10. Data efficiency and implicit spectral augmentation
 
-Standard neural solver:
+A practical side effect of the denoising objective is improved data efficiency. By training across multiple noise levels, the model effectively sees a continually perturbed version of the data, which functions as a simple, broadly applicable augmentation mechanism.
 
-Accurate rollout ~75 seconds
+The paper reports that PDE-Refiner maintains stronger performance than MSE baselines even in reduced-data regimes. :contentReference[oaicite:13]{index=13}
 
-PDE-Refiner:
+Add **Figure 5** here:
 
-Accurate rollout ~100 seconds
-
-Improvement: ~33%
+![Data efficiency and resolution ablations (paper Fig. 5)](/images/posts/pde-refiner/fig5.png)
 
 ---
 
-## Kolmogorov Flow Experiment
+## 11. Robustness: parameter-dependent KS with varying viscosity
 
-A 2D fluid dynamics problem based on Navier-Stokes equation:
+To test robustness across regimes, the paper varies viscosity $$\nu$$, which changes how strongly high frequencies are damped. PDE-Refiner improves rollout stability across viscosities, suggesting that it generalizes across different spectral profiles rather than overfitting to one. :contentReference[oaicite:14]{index=14}
+
+Add **Figure 7** here:
+
+![Varying viscosity KS results (paper Fig. 7)](/images/posts/pde-refiner/fig7.png)
+
+---
+
+## 12. Experiments II: 2D Kolmogorov flow (turbulence benchmark)
+
+The paper also evaluates on 2D Kolmogorov flow, a turbulent Navier–Stokes variant:
 
 $$
 \partial_t u + \nabla \cdot (u \otimes u)
 =
-\nu \nabla^2 u
--
-\nabla p
-+
-f
+\nu \nabla^2 u - \frac{1}{\rho}\nabla p + f.
 $$
 
-PDE-Refiner outperformed:
+Evaluation is reported using correlation over vorticity and compared against classical solvers at multiple resolutions and hybrid ML-augmented solvers. PDE-Refiner improves over strong neural baselines and outperforms multiple prior hybrid approaches under the paper’s metric. :contentReference[oaicite:15]{index=15}
 
-- classical solvers
-- hybrid ML solvers
-- standard neural solvers
+Add **Table 1** screenshot here (recommended):
 
----
-
-## Frequency Analysis Results
-
-The paper shows:
-
-- Standard neural solvers ignore low frequencies.
-
-- PDE-Refiner learns all frequencies.
-
-This leads to stable rollouts.
+![Kolmogorov flow correlation duration (paper Table 1)](/images/posts/pde-refiner/table1.png)
 
 ---
 
-## Uncertainty Estimation
+## 13. Uncertainty estimation via sampling
 
-By sampling different noise realizations:
+A valuable practical question is: *when should we stop trusting a surrogate rollout?*
 
-$$
-\epsilon_k^{(1)}, \epsilon_k^{(2)}, \dots
-$$
+Because PDE-Refiner injects noise during refinement, it can generate multiple rollouts by sampling different noise realizations. If sampled rollouts diverge quickly (low cross-correlation), this indicates higher uncertainty and often correlates with shorter true accuracy horizons.
 
-PDE-Refiner estimates uncertainty.
+The paper demonstrates a strong relationship between sample divergence time and true rollout accuracy, enabling a usable uncertainty estimate without training an ensemble. :contentReference[oaicite:16]{index=16}
 
-This predicts when the model becomes unreliable.
+Add **Figure 6** here:
 
----
-
-## Advantages of PDE-Refiner
-
-- Improved stability  
-- Better frequency modeling  
-- Longer rollout accuracy  
-- Uncertainty estimation  
-- Better data efficiency  
+![Uncertainty estimate via sample divergence (paper Fig. 6)](/images/posts/pde-refiner/fig6.png)
 
 ---
 
-## Limitations
+## 14. Limitations and practical trade-offs
 
-- Higher computational cost due to refinement steps.
+The main limitation is computational cost: refinement requires multiple model evaluations per timestep. The paper notes that the method remains fast compared to high-resolution DNS and competitive with some hybrid methods, but it is slower than a single-step neural operator. :contentReference[oaicite:17]{index=17}
 
-- More refinement steps improve accuracy but increase runtime.
+This trade-off suggests several practical directions:
 
----
-
-## Applications
-
-- Fluid simulation  
-- Weather forecasting  
-- Climate modeling  
-- Engineering simulation  
-- Scientific computing  
+- use fewer refinement steps when speed is critical,
+- distill refinement into a cheaper model,
+- explore accelerated samplers inspired by diffusion-model distillation.
 
 ---
 
 ## Conclusion
 
-PDE-Refiner introduces a new paradigm for neural PDE solving.
-Instead of predicting once, it refines predictions iteratively using denoising.
-This ensures accurate modeling of all frequency components.
+PDE-Refiner reframes long-horizon rollout failure as a **spectral modeling problem**: standard training objectives and common rollout strategies systematically underrepresent low-amplitude frequency components that become important over time in nonlinear PDEs.
 
-## Result
-
-Stable, accurate long-term PDE prediction.
+By introducing an iterative denoising refinement process with a decreasing noise schedule, PDE-Refiner improves spectral coverage, significantly extends stable rollout horizons, improves data efficiency, and provides a natural uncertainty signal through sampling. :contentReference[oaicite:18]{index=18}
 
 ---
 
 ## Reference
 
-Lippe et al.,  
-"PDE-Refiner: Achieving Accurate Long Rollouts with Neural PDE Solvers",  
-NeurIPS 2023
+Phillip Lippe et al., *PDE-Refiner: Achieving Accurate Long Rollouts with Neural PDE Solvers*, NeurIPS 2023. :contentReference[oaicite:19]{index=19}
