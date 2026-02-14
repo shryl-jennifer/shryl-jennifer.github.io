@@ -1,0 +1,50 @@
+
+/* Make inline TOC a centered card */
+.page__content .toc {
+    float: none !important;
+    clear: both !important;
+  
+    width: 100% !important;
+    max-width: 820px;
+    margin: 1.5rem auto;
+  }
+  
+  /* Ensure TOC inner menu uses full width */
+  .page__content .toc__menu {
+    width: 100% !important;
+  }
+  
+  /* Notices (summary boxes) should always be full content width */
+  .page__content .notice,
+  .page__content .notice--info,
+  .page__content .notice--primary,
+  .page__content .notice--warning,
+  .page__content .notice--success,
+  .page__content .notice--danger {
+    clear: both;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  /* Responsive stacking for the left author sidebar */
+  @media (max-width: 1024px) {
+    .sidebar {
+      float: none !important;
+      width: 100% !important;
+      position: relative !important;
+      margin: 0 0 1rem 0 !important;
+    }
+  
+    .page__content {
+      float: none !important;
+      width: 100% !important;
+    }
+  }
+  
+  /* Optional: hide TOC on very small screens */
+  @media (max-width: 600px) {
+    .page__content .toc {
+      display: none !important;
+    }
+  }
+  
