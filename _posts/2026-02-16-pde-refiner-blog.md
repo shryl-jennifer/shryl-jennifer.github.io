@@ -1,19 +1,24 @@
 ---
 title: "PDE-Refiner: Achieving Accurate Long Rollouts with Neural PDE Solvers"
-date: 2026-02-13
+date: 2026-02-16
 permalink: /posts/pde-refiner/
-layout: single
+layout: archive
 author_profile: true
 toc: true
 toc_sticky: true
 toc_label: "On this page"
 classes: wide
+read_time: true
+share: true
 tags:
   - Neural Operators
-  - PDE Surrogates
-  - Diffusion Models
   - Scientific Machine Learning
 ---
+
+{% include toc %}
+
+> **Summary.** This article explains the core ideas and experiments of PDE-Refiner, a refinement-based neural PDE solver that improves long-horizon prediction stability.
+{: .notice}
 
 ## Overview
 

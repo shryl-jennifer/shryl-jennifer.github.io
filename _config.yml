@@ -25,12 +25,13 @@ author:
   # Biographic information
   avatar           : "profile.png"
   name             : "Shryl Shalom Jennifer"
-  pronouns         : # example: "she/her"  
   bio              : "MSc Computer Science"
-  location         : "Earth"
-  employer         : "Stuttgart University"
-  uri              : # URL
-  email            : "shryljennifer14@gmail.com" 
+  location         : "Stuttgart, Germany"
+  employer         : "University of Stuttgart"
+  email            : "shryljennifer14@gmail.com"
+  github           : "shryl-jennifer"
+  cv               : "/files/Shryl_Shalom_Jennifer_CV.pdf"
+
 
   # Academic websites
   academia         : # URL

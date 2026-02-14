@@ -21,11 +21,11 @@ main:
   # - title: "Teaching"
   #   url: /teaching/    
     
-  - title: "Portfolio"
-    url: /portfolio/
+  # - title: "Portfolio"
+  #   url: /portfolio/
     
-  - title: "CV"
-    url: /cv/
+  - title: "About Me"
+    url: /aboutMe/
     
   # - title: "CV"
   #   url: /cv-json/

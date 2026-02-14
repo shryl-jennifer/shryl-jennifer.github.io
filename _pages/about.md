@@ -5,20 +5,36 @@ title: "Shryl Shalom Jennifer"
 permalink: /
 ---
 
-## About
+I am a Master's student in Computer Science (Autonomous Systems) at the University of Stuttgart, with a background in full-stack software engineering and a growing focus on machine learning for dynamical systems.
 
-I am an MSc Computer Science student at the University of Stuttgart, specializing in Autonomous Systems. My interests lie in machine learning methods for modeling and understanding complex dynamical systems, with a focus on stability, generalization, and long-horizon prediction.
+My current interests lie in understanding how learning-based models can reliably predict and simulate complex systems over long time horizons. In particular, I am interested in scientific machine learning, neural operators, and refinement-based approaches that improve stability, accuracy, and uncertainty awareness in learned simulators.
 
-I am particularly interested in approaches that combine deep learning with structure-aware methods, enabling reliable prediction and decision-making in scientific and autonomous settings.
+Before starting my Master's, I worked as a full-stack engineer in Tokyo, where I developed production systems and applied machine learning techniques in real-world environments. I am currently expanding this experience toward research, with the goal of contributing to reliable and interpretable machine learning methods for scientific and autonomous systems.
 
-## Research interests
+---
 
-- Scientific machine learning and neural operators for dynamical systems  
-- Stability and generalization of learning-based simulation models  
-- Diffusion-inspired refinement and uncertainty-aware prediction  
-- Artificial intelligence for autonomous systems, including planning and heuristic search  
-- Learning-based methods for modeling physical and engineering processes  
+## Research directions
+
+My current focus includes:
+
+- Scientific machine learning and neural PDE solvers  
+- Stability and generalization in learning-based simulation  
+- Diffusion-inspired refinement and uncertainty estimation  
+- Machine learning for dynamical and physical systems  
+- AI methods for autonomous and decision-making systems  
+
+---
 
 ## Featured work
 
 - [PDE-Refiner: Achieving Accurate Long Rollouts with Neural PDE Solvers](/posts/pde-refiner/)
+
+This article presents an in-depth explanation of refinement-based neural PDE solvers and how diffusion-inspired methods can improve long-horizon prediction stability.
+
+---
+
+## Explore more
+
+- Learn more [about me](/aboutMe/)
+- View my [CV](/files/Shryl_Shalom_Jennifer_CV.pdf)
+- Read my [blog posts](/posts/)
