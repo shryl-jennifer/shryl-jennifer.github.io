@@ -60,12 +60,10 @@ A central empirical observation in the paper is that common neural PDE solvers t
 
 This is not merely a cosmetic error: in nonlinear PDEs, frequency components interact. Even if neglected frequencies are initially small, they can influence (or contaminate) dominant modes over time, causing a delayed but decisive degradation in rollout quality.
 
-### Visual intuition (recommended figure)
-Export **Figure 1** from the paper and add it here:
+### Visual intuition
 
-![Rollout instability and frequency-spectrum mismatch (paper Fig. 1)](/images/posts/pde-refiner/fig1.png)
+![Rollout instability and frequency-spectrum mismatch (paper Fig. 1)](/images/posts/pde-refiner/KM_FFT_Spectrum-1.png)
 
-*(Tip: name the exported image `fig1.png`.)*
 
 ---
 
@@ -111,10 +109,8 @@ Instead of producing a single one-step prediction, PDE-Refiner performs **multip
 
 A key design choice is: the refinement is framed as a **denoising problem**. Denoising forces attention across the spectrum because Gaussian noise injects energy uniformly across frequencies.
 
-### Add the method diagram
-Export **Figure 2** from the paper:
 
-![PDE-Refiner refinement process (paper Fig. 2)](/images/posts/pde-refiner/fig2.png)
+![PDE-Refiner refinement process (paper Fig. 2)](/images/posts/pde-refiner/KS_PDERefiner_fft_intermediate-1.png)
 
 ---
 
@@ -180,9 +176,8 @@ The paper evaluates PDE-Refiner and multiple baselines on KS dynamics using mode
 
 PDE-Refiner substantially extends stable rollout time compared to an MSE-trained baseline and compared to a wide range of rollout tricks and alternative losses. :contentReference[oaicite:11]{index=11}
 
-Add **Figure 3** here:
 
-![Rollout time comparison on KS (paper Fig. 3)](/images/posts/pde-refiner/fig3.png)
+![Rollout time comparison on KS (paper Fig. 3)](/images/posts/pde-refiner/KS_barplot_correlation_time_reordered-1.png)
 
 ---
 
@@ -194,9 +189,8 @@ A core empirical analysis in the paper compares prediction error spectra over re
 - refinement steps progressively recover low-amplitude spectral components,
 - the final prediction matches a broader band of the spectrum, leading to improved long-horizon stability.
 
-Add **Figure 4** here:
 
-![Frequency-domain analysis (paper Fig. 4)](/images/posts/pde-refiner/fig4.png)
+![Frequency-domain analysis (paper Fig. 4)](/images/posts/pde-refiner/KS_frequency_spectrum_precision-1.png)
 
 This figure is the clearest evidence that the method is not merely reducing average MSE, but specifically reducing errors in spectral regions that matter for long-horizon dynamics. :contentReference[oaicite:12]{index=12}
 
@@ -208,9 +202,8 @@ A practical side effect of the denoising objective is improved data efficiency. 
 
 The paper reports that PDE-Refiner maintains stronger performance than MSE baselines even in reduced-data regimes. :contentReference[oaicite:13]{index=13}
 
-Add **Figure 5** here:
 
-![Data efficiency and resolution ablations (paper Fig. 5)](/images/posts/pde-refiner/fig5.png)
+![Data efficiency and resolution ablations (paper Fig. 5)](/images/posts/pde-refiner/KS_performance_over_resolution-1.png)
 
 ---
 
@@ -218,9 +211,8 @@ Add **Figure 5** here:
 
 To test robustness across regimes, the paper varies viscosity $$\nu$$, which changes how strongly high frequencies are damped. PDE-Refiner improves rollout stability across viscosities, suggesting that it generalizes across different spectral profiles rather than overfitting to one. :contentReference[oaicite:14]{index=14}
 
-Add **Figure 7** here:
 
-![Varying viscosity KS results (paper Fig. 7)](/images/posts/pde-refiner/fig7.png)
+![Varying viscosity KS results (paper Fig. 7)](/images/posts/pde-refiner/KS_conditional_rollout_over_viscosity-1.png)
 
 ---
 
@@ -236,10 +228,6 @@ $$
 
 Evaluation is reported using correlation over vorticity and compared against classical solvers at multiple resolutions and hybrid ML-augmented solvers. PDE-Refiner improves over strong neural baselines and outperforms multiple prior hybrid approaches under the paper’s metric. :contentReference[oaicite:15]{index=15}
 
-Add **Table 1** screenshot here (recommended):
-
-![Kolmogorov flow correlation duration (paper Table 1)](/images/posts/pde-refiner/table1.png)
-
 ---
 
 ## 13. Uncertainty estimation via sampling
@@ -250,9 +238,7 @@ Because PDE-Refiner injects noise during refinement, it can generate multiple ro
 
 The paper demonstrates a strong relationship between sample divergence time and true rollout accuracy, enabling a usable uncertainty estimate without training an ensemble. :contentReference[oaicite:16]{index=16}
 
-Add **Figure 6** here:
-
-![Uncertainty estimate via sample divergence (paper Fig. 6)](/images/posts/pde-refiner/fig6.png)
+![Uncertainty estimate via sample divergence (paper Fig. 6)](/images/posts/pde-refiner/KS_diffusion_uncertainty_estimation_scatter_plot-1.png)
 
 ---
 
