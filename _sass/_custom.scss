@@ -1,20 +1,19 @@
+/* Inline TOC centered + responsive layout*/
 
-/* Make inline TOC a centered card */
+/* Inline TOC as a centered block */
 .page__content .toc {
     float: none !important;
     clear: both !important;
-  
     width: 100% !important;
     max-width: 820px;
     margin: 1.5rem auto;
   }
   
-  /* Ensure TOC inner menu uses full width */
   .page__content .toc__menu {
     width: 100% !important;
   }
   
-  /* Notices (summary boxes) should always be full content width */
+  /* Notices full width */
   .page__content .notice,
   .page__content .notice--info,
   .page__content .notice--primary,
@@ -26,7 +25,7 @@
     max-width: 100%;
   }
   
-  /* Responsive stacking for the left author sidebar */
+  /* Responsive author sidebar */
   @media (max-width: 1024px) {
     .sidebar {
       float: none !important;
@@ -46,5 +45,68 @@
     .page__content .toc {
       display: none !important;
     }
+  }
+  
+  /* Image Lightbox (click to open fullscreen) */
+  
+  .image-popup img {
+    cursor: zoom-in;
+  }
+  
+  /* Overlay with blur + dim */
+  .ap-lightbox-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 99999;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  
+  /* Container keeps image centered */
+  .ap-lightbox-content {
+    position: relative;
+    max-width: min(1200px, 95vw);
+    max-height: 90vh;
+  }
+  
+  /* Image scaling */
+  .ap-lightbox-content img {
+    display: block;
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: 10px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+  }
+  
+  /* Close button */
+  .ap-lightbox-close {
+    position: absolute;
+    top: -14px;
+    right: -14px;
+  
+    width: 40px;
+    height: 40px;
+  
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+  
+    background: rgba(255,255,255,0.92);
+    color: #111;
+    font-size: 22px;
+    line-height: 40px;
+    text-align: center;
+  
+    box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+  }
+  
+  .ap-lightbox-close:hover {
+    background: #fff;
   }
   
