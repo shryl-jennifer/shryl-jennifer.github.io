@@ -5,14 +5,27 @@
 {% endif %}
 
 <div itemscope itemtype="http://schema.org/Person">
-
-  <div class="author__avatar">
-    {% if author.avatar contains "://" %}
-    	<img src="{{ author.avatar }}" alt="{{ author.name }}"  fetchpriority="high" />
-    {% else %}
-    	<img src="{{ author.avatar | prepend: "/images/" | prepend: base_path }}" class="author__avatar" alt="{{ author.name }}"  fetchpriority="high" />
+  
+  <div class="author__avatar" style="width:160px;height:160px;">
+    {% if author.avatar %}
+      {% if author.avatar contains "://" %}
+        <a href="{{ author.avatar }}" class="image-popup"
+           style="display:block;width:160px;height:160px;border-radius:50%;overflow:hidden;cursor:zoom-in;">
+          <img src="{{ author.avatar }}" alt="{{ author.name }}" fetchpriority="high"
+               style="width:160px;height:160px;object-fit:cover;border-radius:50%;display:block;" />
+        </a>
+      {% else %}
+        {% assign avatar_path = author.avatar | prepend: "/images/" | prepend: base_path %}
+        <a href="{{ avatar_path }}" class="image-popup"
+           style="display:block;width:160px;height:160px;border-radius:50%;overflow:hidden;cursor:zoom-in;">
+          <img src="{{ avatar_path }}" alt="{{ author.name }}" fetchpriority="high"
+               style="width:160px;height:160px;object-fit:cover;border-radius:50%;display:block;" />
+        </a>
+      {% endif %}
     {% endif %}
   </div>
+  
+  
 
   <div class="author__content">
     <h3 class="author__name">{{ author.name }}</h3>

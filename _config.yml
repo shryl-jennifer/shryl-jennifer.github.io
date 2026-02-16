@@ -23,7 +23,7 @@ repository               : "shryl-jennifer/shryl-jennifer.github.io"
 #               Additional customization can be done by editing /_includes/author-profile.html
 author:
   # Biographic information
-  avatar           : "profile.png"
+  avatar           : "profile_picture.jpeg"
   name             : "Shryl Shalom Jennifer"
   bio              : "MSc Computer Science"
   location         : "Stuttgart, Germany"
