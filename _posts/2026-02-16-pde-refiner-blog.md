@@ -100,7 +100,7 @@ This can produce good one-step predictions, but long rollouts still fail—espec
 
 ---
 
-## 4. Why “fixing rollout strategy” alone is not enough (expanded)
+## 4. Why “fixing rollout strategy” alone is not enough
 
 A natural idea is: “If rollouts fail due to compounding error, let’s change training/rollout strategies.”
 
@@ -155,7 +155,7 @@ So the paper proposes a different idea:
 
 ---
 
-## 5. PDE-Refiner: iterative denoising refinement (expanded, step-by-step)
+## 5. PDE-Refiner: iterative denoising refinement
 
 PDE-Refiner predicts the next state and then **refines it** through a small number of correction steps.
 
@@ -166,7 +166,7 @@ The refinement is set up as a **denoising problem**:
 
 This design matters because noise injects energy across frequencies, forcing corrections across the spectrum rather than only the dominant modes.
 
-### 5.1 Step-by-step algorithm (clear version)
+### 5.1 Step-by-step algorithm
 
 At time $$t$$ we want $$u(t+\Delta t)$$.
 
@@ -238,7 +238,7 @@ $$
 </div>
 
 
-### 5.2 Why adding noise helps (intuition)
+### 5.2 Why adding noise helps
 If the model only sees clean predictions, it tends to correct what contributes most to MSE (dominant modes).
 Adding noise forces the model to learn corrections robustly across amplitudes and frequencies.
 
@@ -288,7 +288,7 @@ This trains the refiner to operate at different noise levels (different scales),
 
 ---
 
-## 7. Why it works: improved accuracy across frequency bands (expanded)
+## 7. Why it works: improved accuracy across frequency bands
 
 The paper’s key mechanism is that refinement reduces error **more uniformly across frequencies**.
 
@@ -440,7 +440,7 @@ The takeaway is consistent: when small-scale errors are not controlled, long rol
 
 ---
 
-## 9. Uncertainty estimation via sampling (expanded)
+## 9. Uncertainty estimation via sampling
 
 PDE-Refiner enables a practical uncertainty signal because refinement involves stochastic noise. We can run multiple refinement samples (different noise draws) and compare their rollouts.
 
