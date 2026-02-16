@@ -21,6 +21,15 @@ pdf: /files/posts/pde-refiner/PDE-Refiner-Blog.pdf
 
 Neural surrogate models for time-dependent PDEs can be dramatically faster than classical solvers—especially when high-resolution simulations must be repeated many times (design loops, optimization, uncertainty quantification). The practical bottleneck is not one-step prediction, but **stable long rollouts**: when a model predicts a trajectory step-by-step, small errors compound until the rollout becomes unreliable.
 
+These PDEs arise in real physical systems. For example:
+
+- fluid turbulence in engineering simulations,
+- plasma dynamics in physics,
+- climate and weather prediction,
+- combustion and chemical reaction modeling.
+
+Accurate and fast surrogate solvers can significantly reduce simulation cost in these applications, enabling faster design optimization and uncertainty analysis.
+
 This post summarizes the main ideas and results of *PDE-Refiner: Achieving Accurate Long Rollouts with Neural PDE Solvers* (NeurIPS 2023) [[paper]](https://arxiv.org/abs/2308.05732).
 
 ---
@@ -201,6 +210,33 @@ $$
 This turns refinement into a coarse-to-fine correction process:
 - early steps fix large-scale structure,
 - later steps recover smaller-scale details.
+
+### Algorithm: PDE-Refiner rollout step
+
+<div markdown="1" style="background:#f7f7f7; padding:16px; border-radius:8px; border:1px solid #ddd; overflow-x:auto;">
+
+**Input:** state u(t) <br />
+**Output:** refined prediction $$\hat{u}(t+\Delta t)$$
+
+$$
+\begin{aligned}
+\textbf{1. Initial prediction:} \quad
+\hat{u}_0 &= \text{BaseModel}(u(t)) \\\\[6pt]
+
+\textbf{2. Refinement loop:} \\\\
+\text{for } k &= 1,\dots,K \text{ do} \\
+\quad \epsilon_k &\sim \mathcal{N}(0,1) \\
+\quad \tilde{u}_k &= \hat{u}_k + \sigma_k \epsilon_k \\
+\quad \hat{\epsilon}_k &= \text{Refiner}(\tilde{u}_k,\text{context},k) \\
+\quad \hat{u}_{k+1} &= \tilde{u}_k - \sigma_k \hat{\epsilon}_k \\\\[6pt]
+
+\textbf{3. Return:} \quad
+\hat{u}_K
+\end{aligned}
+$$
+
+</div>
+
 
 ### 5.2 Why adding noise helps (intuition)
 If the model only sees clean predictions, it tends to correct what contributes most to MSE (dominant modes).
@@ -475,9 +511,60 @@ PDE-Refiner improves stability by refining each predicted step through iterative
 
 ---
 
-## Reference
+## References
 
-Lippe, P., et al. (2023). *PDE-Refiner: Achieving Accurate Long Rollouts with Neural PDE Solvers.* NeurIPS 2023.
+**Primary paper**
 
+[1] Lippe, P., et al. (2023).  
+*PDE-Refiner: Achieving Accurate Long Rollouts with Neural PDE Solvers.*  
+NeurIPS 2023.  
 - [arXiv page](https://arxiv.org/abs/2308.05732)
 - [PDF](https://arxiv.org/pdf/2308.05732.pdf)
+
+---
+
+**Related work on neural PDE solvers**
+
+[2] Brandstetter, J., Worrall, D., and Welling, M. (2022).  
+*Message Passing Neural PDE Solvers.*  
+International Conference on Learning Representations (ICLR).
+
+[3] Brandstetter, J., Berg, R. van den, Welling, M., and Gupta, J. (2023).  
+*Clifford Neural Layers for PDE Modeling.*  
+International Conference on Learning Representations (ICLR).
+
+[4] Bar-Sinai, Y., Hoyer, S., Hickey, J., and Brenner, M. (2019).  
+*Learning data-driven discretizations for partial differential equations.*  
+Proceedings of the National Academy of Sciences.
+
+---
+
+**Related work on diffusion and denoising**
+
+[5] Dhariwal, P. and Nichol, A. (2021).  
+*Diffusion models beat GANs on image synthesis.*  
+NeurIPS.
+
+[6] Berthelot, D., et al. (2023).  
+*TRACT: Denoising Diffusion Models with Transitive Closure Time-Distillation.*  
+arXiv:2303.04248.
+
+---
+
+**Related work on stability and surrogate modeling**
+
+[7] Chattopadhyay, A. and Hassanzadeh, P. (2023).  
+*Long-term instabilities of deep learning-based climate digital twins.*  
+arXiv:2304.07029.
+
+[8] Arcumano, T., et al. (2022).  
+*A Hybrid Approach to Atmospheric Modeling Combining Machine Learning and Physics-Based Simulation.*  
+Journal of Advances in Modeling Earth Systems.
+
+---
+
+**Tools used**
+
+[9] Bradbury, J., et al. (2018).  
+*JAX: composable transformations of Python+NumPy programs.*  
+https://github.com/google/jax
