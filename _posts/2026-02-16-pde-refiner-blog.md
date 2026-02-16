@@ -213,7 +213,7 @@ This turns refinement into a coarse-to-fine correction process:
 
 ### Algorithm: PDE-Refiner rollout step
 
-<div markdown="1" style="background:#f7f7f7; padding:16px; border-radius:8px; border:1px solid #ddd; overflow-x:auto;">
+<div markdown="1" class="algorithm-box">
 
 **Input:** state u(t) <br />
 **Output:** refined prediction $$\hat{u}(t+\Delta t)$$

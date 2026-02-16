@@ -24,9 +24,12 @@
 
 <script>
   (function () {
+  
     function closeLightbox() {
       const overlay = document.getElementById("ap-lightbox");
+  
       if (overlay) overlay.remove();
+  
       document.body.style.overflow = "";
       document.removeEventListener("keydown", onKeyDown);
     }
@@ -36,89 +39,71 @@
     }
   
     function openLightbox(imgUrl, altText) {
-      closeLightbox(); 
   
-      // Overlay (inline styles so it ALWAYS appears centered)
+      closeLightbox();
+  
       const overlay = document.createElement("div");
       overlay.id = "ap-lightbox";
-      overlay.style.position = "fixed";
-      overlay.style.inset = "0";
-      overlay.style.zIndex = "999999";
-      overlay.style.display = "flex";
-      overlay.style.alignItems = "center";
-      overlay.style.justifyContent = "center";
-      overlay.style.padding = "24px";
-      overlay.style.background = "rgba(0,0,0,0.55)";
-      overlay.style.backdropFilter = "blur(6px)";
-      overlay.style.webkitBackdropFilter = "blur(6px)";
+      overlay.className = "ap-lightbox-overlay";
   
-      // Content container
       const content = document.createElement("div");
-      content.style.position = "relative";
-      content.style.maxWidth = "min(1200px, 95vw)";
-      content.style.maxHeight = "90vh";
+      content.className = "ap-lightbox-content";
   
-      // Image
       const img = document.createElement("img");
       img.src = imgUrl;
-      img.alt = altText || "Image";
-      img.style.display = "block";
-      img.style.maxWidth = "100%";
-      img.style.maxHeight = "90vh";
-      img.style.borderRadius = "10px";
-      img.style.boxShadow = "0 12px 30px rgba(0,0,0,0.45)";
+      img.alt = altText || "";
   
-      // Close button
       const closeBtn = document.createElement("button");
-      closeBtn.type = "button";
+      closeBtn.className = "ap-lightbox-close";
       closeBtn.innerHTML = "&times;";
       closeBtn.setAttribute("aria-label", "Close");
-      closeBtn.style.position = "absolute";
-      closeBtn.style.top = "-14px";
-      closeBtn.style.right = "-14px";
-      closeBtn.style.width = "40px";
-      closeBtn.style.height = "40px";
-      closeBtn.style.border = "none";
-      closeBtn.style.borderRadius = "999px";
-      closeBtn.style.cursor = "pointer";
-      closeBtn.style.background = "rgba(255,255,255,0.92)";
-      closeBtn.style.color = "#111";
-      closeBtn.style.fontSize = "26px";
-      closeBtn.style.lineHeight = "40px";
-      closeBtn.style.textAlign = "center";
-      closeBtn.style.boxShadow = "0 8px 20px rgba(0,0,0,0.35)";
   
-      closeBtn.addEventListener("click", function (e) {
+      closeBtn.onclick = closeLightbox;
+  
+      overlay.onclick = closeLightbox;
+  
+      content.onclick = function(e) {
         e.stopPropagation();
-        closeLightbox();
-      });
-  
-      // Close on clicking the background
-      overlay.addEventListener("click", closeLightbox);
-  
-      // Don’t close when clicking inside content
-      content.addEventListener("click", function (e) {
-        e.stopPropagation();
-      });
+      };
   
       content.appendChild(closeBtn);
       content.appendChild(img);
+  
       overlay.appendChild(content);
+  
       document.body.appendChild(overlay);
   
       document.body.style.overflow = "hidden";
+  
       document.addEventListener("keydown", onKeyDown);
     }
   
-    document.addEventListener("DOMContentLoaded", function () {
-      document.querySelectorAll("a.image-popup").forEach(function (link) {
-        link.addEventListener("click", function (e) {
+    function initializeLightbox() {
+  
+      document.querySelectorAll("a.image-popup").forEach(function(link) {
+  
+        link.style.cursor = "zoom-in";
+  
+        link.onclick = function(e) {
+  
           e.preventDefault();
+  
           const img = link.querySelector("img");
-          openLightbox(link.getAttribute("href"), img ? img.alt : "");
-        });
+  
+          openLightbox(
+            link.getAttribute("href"),
+            img ? img.alt : ""
+          );
+  
+        };
+  
       });
-    });
+  
+    }
+  
+    document.addEventListener("DOMContentLoaded", initializeLightbox);
+  
   })();
   </script>
+  
   
