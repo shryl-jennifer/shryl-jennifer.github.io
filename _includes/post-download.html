@@ -1,8 +1,7 @@
 {% if page.pdf %}
-  <p class="page__meta" style="margin-top:-0.5rem;">
-    <i class="fa fa-file-pdf" aria-hidden="true"></i>
-    <a href="{{ page.pdf | relative_url }}" target="_blank" rel="noopener">
-      Download this blog as PDF
-    </a>
-  </p>
+<p style="margin: 0.6rem 0 1.2rem 0;">
+  <a href="{{ page.pdf | relative_url }}" target="_blank" rel="noopener">
+    Download PDF
+  </a>
+</p>
 {% endif %}
