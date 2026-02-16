@@ -8,7 +8,7 @@ toc: false
 toc_sticky: false
 toc_label: "On this page"
 classes: wide
-pdf: /files/posts/pde-refiner/PDE-Refiner-Blog.pdf
+pdf: /files/posts/pde-refiner/MainBlogPost.pdf
 ---
 
 {% include toc %}
